@@ -20,6 +20,7 @@ export type GeneralContractor = {
   hit_rate_dollar: number | null;
   est_relationship: number | null;
   total_bids: number | null;
+  total_bids_submitted_raw: number | null;
   created_at: string;
 };
 

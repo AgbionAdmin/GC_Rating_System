@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Plus, Search, X } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Plus, Search, Upload, X } from 'lucide-react';
 import { supabase, type GeneralContractor, type Rating } from '../lib/supabase';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
@@ -9,6 +9,7 @@ type Props = {
   onBack: () => void;
   backLabel?: string;
   onSelectGC: (gcId: string) => void;
+  onUploadCSV: () => void;
 };
 
 export type GCRow = {
@@ -16,7 +17,7 @@ export type GCRow = {
   name: string;
   award_probability: number | null;
   hit_rate_pct_score: number | null;
-  hit_rate_dollar: number | null;
+  hit_rate_dollar_score: number | null;
   payment_timeline: number;
   co_approval_timeline: number;
   co_negotiations: number;
@@ -56,7 +57,7 @@ const COLUMNS: { key: SortKey; label: string; short: string }[] = [
   { key: 'est_relationship', label: 'Est Relation', short: 'Est Relation' },
   { key: 'total_bids', label: 'Total Bids', short: 'Total Bids' },
   { key: 'hit_rate_pct_score', label: 'Hit Rate (%)', short: 'Hit Rate (%)' },
-  { key: 'hit_rate_dollar', label: 'Hit Rate ($)', short: 'Hit Rate ($)' },
+  { key: 'hit_rate_dollar_score', label: 'Hit Rate ($)', short: 'Hit Rate ($)' },
   { key: 'rating_count', label: '# of Ratings', short: '# Ratings' },
 ];
 
@@ -67,6 +68,21 @@ function avg(vals: number[]): number {
 
 function fmt(n: number): string {
   return n.toFixed(1);
+}
+
+// Convert a 0–1 hit rate ratio to a 1–5 score (min 1 when ratio < 0.2)
+function hitRateToScore(ratio: number): number {
+  const raw = ratio * 5;
+  return Math.min(5, Math.max(1, raw));
+}
+
+// Convert total bids submitted dollar amount to a 1–5 score
+function totalBidsToScore(dollars: number): number {
+  if (dollars <= 0) return 1;
+  if (dollars < 1_000_000) return 2;
+  if (dollars < 5_000_000) return 3;
+  if (dollars < 10_000_000) return 4;
+  return 5;
 }
 
 function gcMatchScore(name: string, query: string): number {
@@ -112,7 +128,11 @@ function ScoreCell({ value, highlight }: { value: number; highlight?: boolean })
 
 export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
   const hit_rate_pct_score =
-    gc.award_probability != null ? gc.award_probability * 5 : null;
+    gc.award_probability != null ? hitRateToScore(gc.award_probability) : null;
+  const hit_rate_dollar_score =
+    gc.hit_rate_dollar != null ? hitRateToScore(gc.hit_rate_dollar) : null;
+  const total_bids =
+    gc.total_bids_submitted_raw != null ? totalBidsToScore(gc.total_bids_submitted_raw) : null;
 
   if (gcRatings.length === 0) {
     return {
@@ -120,7 +140,7 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
       name: gc.name,
       award_probability: gc.award_probability,
       hit_rate_pct_score,
-      hit_rate_dollar: gc.hit_rate_dollar ?? null,
+      hit_rate_dollar_score,
       payment_timeline: 0,
       co_approval_timeline: 0,
       co_negotiations: 0,
@@ -131,7 +151,7 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
       site_control: 0,
       relationship: 0,
       est_relationship: gc.est_relationship ?? null,
-      total_bids: gc.total_bids ?? null,
+      total_bids,
       overall_score: null,
       rating_count: 0,
     };
@@ -150,26 +170,24 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
   };
 
   const catValues = Object.values(categoryAvgs);
-  const scoreComponents = hit_rate_pct_score != null
-    ? [...catValues, hit_rate_pct_score]
-    : catValues;
-  const overall_score = avg(scoreComponents);
+  const extraScores = [hit_rate_pct_score, hit_rate_dollar_score, total_bids].filter((v): v is number => v != null);
+  const overall_score = avg([...catValues, ...extraScores]);
 
   return {
     id: gc.id,
     name: gc.name,
     award_probability: gc.award_probability,
     hit_rate_pct_score,
-    hit_rate_dollar: gc.hit_rate_dollar ?? null,
+    hit_rate_dollar_score,
     ...categoryAvgs,
     est_relationship: gc.est_relationship ?? null,
-    total_bids: gc.total_bids ?? null,
+    total_bids,
     overall_score,
     rating_count: gcRatings.length,
   };
 }
 
-export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC }: Props) {
+export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC, onUploadCSV }: Props) {
   const [rows, setRows] = useState<GCRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -365,6 +383,13 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
                 </p>
               </div>
             )}
+            <button
+              onClick={onUploadCSV}
+              className="flex items-center gap-2 px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold rounded-lg transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Upload CSV
+            </button>
           </div>
         </div>
 
@@ -566,8 +591,8 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
                           </td>
                           {/* Hit Rate ($) */}
                           <td className="px-4 py-3 text-center">
-                            {row.hit_rate_dollar != null
-                              ? <span className="text-white/70 font-medium tabular-nums">${row.hit_rate_dollar.toLocaleString()}</span>
+                            {row.hit_rate_dollar_score != null
+                              ? <ScoreCell value={row.hit_rate_dollar_score} />
                               : <span className="text-white/20">—</span>}
                           </td>
                           <td className="px-4 py-3 text-center">

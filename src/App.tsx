@@ -6,6 +6,7 @@ import PMHomeScreen from './screens/PMHomeScreen';
 import AddReportFlow from './screens/AddReportFlow';
 import GCDashboard from './screens/GCDashboard';
 import GCDetailPage from './screens/GCDetailPage';
+import CSVUploadScreen from './screens/CSVUploadScreen';
 import { type ProjectManager } from './lib/supabase';
 
 type Screen =
@@ -14,7 +15,8 @@ type Screen =
   | 'pm-home'
   | 'pm-add-report'
   | 'gc-dashboard'
-  | 'gc-detail';
+  | 'gc-detail'
+  | 'csv-upload';
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('landing');
@@ -33,7 +35,10 @@ export default function App() {
     setScreen('pm-home');
   }
 
-  const headerSubtitle = screen === 'gc-dashboard' ? 'GC Performance Dashboard' : 'GC Rating System';
+  const headerSubtitle =
+    screen === 'gc-dashboard' ? 'GC Performance Dashboard' :
+    screen === 'csv-upload' ? 'Upload Bid Data' :
+    'GC Rating System';
 
   function handleHome() {
     setScreen('landing');
@@ -83,6 +88,7 @@ export default function App() {
           onBack={() => setScreen(selectedPM ? 'pm-home' : 'landing')}
           backLabel={selectedPM ? '← Back to Home' : '← Back'}
           onSelectGC={(id) => { setSelectedGCId(id); setScreen('gc-detail'); }}
+          onUploadCSV={() => setScreen('csv-upload')}
         />
       )}
 
@@ -91,6 +97,13 @@ export default function App() {
           gcId={selectedGCId}
           onBack={() => setScreen('gc-dashboard')}
           onAwardProbabilityUpdated={() => {}}
+        />
+      )}
+
+      {screen === 'csv-upload' && (
+        <CSVUploadScreen
+          onBack={() => setScreen('gc-dashboard')}
+          onComplete={() => setScreen('gc-dashboard')}
         />
       )}
     </div>
