@@ -152,17 +152,17 @@ function parseBCCSV(text: string, gcs: GeneralContractor[]): BCMatchedRow[] {
   };
 
   const colClient = findCol(['client']);
-  const colBids = findCol(['#bids', 'bids', 'number of bids']);
-  const colBidsWon = findCol(['#bids won', 'bids won', 'number of bids won']);
+  const colBids = findCol(['# bids', '#bids', 'bids', 'number of bids']);
+  const colBidsWon = findCol(['# bids won', '#bids won', 'bids won', 'number of bids won']);
   const colTotalSubmitted = findCol(['total bids submitted', 'total bids', 'bids submitted']);
-  const colTotalWin = findCol(['total win', 'total wins', 'win total']);
+  const colTotalWin = findCol(['total won', 'total win', 'total wins', 'win total']);
 
   const missing: string[] = [];
   if (colClient === -1) missing.push('Client');
-  if (colBids === -1) missing.push('#Bids');
-  if (colBidsWon === -1) missing.push('#Bids Won');
+  if (colBids === -1) missing.push('# Bids');
+  if (colBidsWon === -1) missing.push('# Bids Won');
   if (colTotalSubmitted === -1) missing.push('Total Bids Submitted');
-  if (colTotalWin === -1) missing.push('Total Win');
+  if (colTotalWin === -1) missing.push('Total Won');
   if (missing.length > 0) {
     throw new Error(
       `Missing required columns: ${missing.join(', ')}. Make sure you're uploading the "Client" sheet.`,
@@ -431,10 +431,10 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
               {[
                 { col: 'A', name: 'Client', desc: 'GC name' },
-                { col: 'B', name: '#Bids', desc: 'Bids submitted' },
-                { col: 'C', name: '#Bids Won', desc: 'Bids awarded' },
+                { col: 'B', name: '# Bids', desc: 'Bids submitted' },
+                { col: 'C', name: '# Bids Won', desc: 'Bids awarded' },
                 { col: 'E', name: 'Total Bids Submitted', desc: 'Dollar volume' },
-                { col: 'F', name: 'Total Win', desc: 'Dollar won' },
+                { col: 'F', name: 'Total Won', desc: 'Dollar won' },
               ].map((c) => (
                 <div key={c.col} className="flex flex-col gap-0.5 bg-white/5 rounded-lg px-3 py-2">
                   <span className="text-white/30 text-[10px] uppercase tracking-wider">Col {c.col}</span>
@@ -559,7 +559,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
                       <tr className="bg-white/[0.03] border-b border-white/10 text-white/40 text-xs uppercase tracking-wider">
                         <th className="px-4 py-3 text-left font-medium">CSV Client Name</th>
                         <th className="px-4 py-3 text-left font-medium">Matched GC</th>
-                        <th className="px-4 py-3 text-center font-medium">#Bids</th>
+                        <th className="px-4 py-3 text-center font-medium"># Bids</th>
                         <th className="px-4 py-3 text-center font-medium">Hit Rate (%)</th>
                         <th className="px-4 py-3 text-center font-medium">Total Submitted</th>
                         <th className="px-4 py-3 text-center font-medium">Hit Rate ($)</th>
