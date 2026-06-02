@@ -25,7 +25,7 @@ const SCORE_FIELDS: { key: keyof Rating; label: string }[] = [
   { key: 'schedule_trade_stacking', label: 'Schedule (Stacking)' },
   { key: 'schedule_accuracy', label: 'Schedule (Accuracy)' },
   { key: 'site_control', label: 'Site Control' },
-  { key: 'relationship', label: 'Relationship' },
+  { key: 'relationship', label: 'PM Relation' },
 ];
 
 function ScoreBadge({ value }: { value: number }) {
@@ -210,7 +210,7 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
             highlight
           />
           <ScoreCard
-            label="Award Prob. Score"
+            label="Hit Rate (%) Score"
             value={awardScore != null ? awardScore.toFixed(1) + ' / 5' : '—'}
           />
           <ScoreCard
@@ -224,12 +224,12 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left col: Award Probability + Category Averages */}
+          {/* Left col: Hit Rate (%) + Category Averages */}
           <div className="lg:col-span-1 flex flex-col gap-6">
-            {/* Award Probability */}
+            {/* Hit Rate (%) */}
             <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                <p className="text-white/60 text-xs uppercase tracking-wider font-medium">Award Probability</p>
+                <p className="text-white/60 text-xs uppercase tracking-wider font-medium">Hit Rate (%)</p>
                 {!editing && (
                   <button
                     onClick={() => { setEditing(true); setApError(''); }}

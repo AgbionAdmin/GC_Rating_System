@@ -15,7 +15,8 @@ export type GCRow = {
   id: string;
   name: string;
   award_probability: number | null;
-  award_probability_score: number | null;
+  hit_rate_pct_score: number | null;
+  hit_rate_dollar: number | null;
   payment_timeline: number;
   co_approval_timeline: number;
   co_negotiations: number;
@@ -25,6 +26,8 @@ export type GCRow = {
   schedule_accuracy: number;
   site_control: number;
   relationship: number;
+  est_relationship: number | null;
+  total_bids: number | null;
   overall_score: number | null;
   rating_count: number;
 };
@@ -49,8 +52,11 @@ const COLUMNS: { key: SortKey; label: string; short: string }[] = [
   { key: 'schedule_trade_stacking', label: 'Schedule (Stacking)', short: 'Stacking' },
   { key: 'schedule_accuracy', label: 'Schedule (Accuracy)', short: 'Accuracy' },
   { key: 'site_control', label: 'Site Control', short: 'Site' },
-  { key: 'relationship', label: 'Relationship', short: 'Relation' },
-  { key: 'award_probability_score', label: 'Award Prob. Score', short: 'Award Score' },
+  { key: 'relationship', label: 'PM Relation', short: 'PM Relation' },
+  { key: 'est_relationship', label: 'Est Relation', short: 'Est Relation' },
+  { key: 'total_bids', label: 'Total Bids', short: 'Total Bids' },
+  { key: 'hit_rate_pct_score', label: 'Hit Rate (%)', short: 'Hit Rate (%)' },
+  { key: 'hit_rate_dollar', label: 'Hit Rate ($)', short: 'Hit Rate ($)' },
   { key: 'rating_count', label: '# of Ratings', short: '# Ratings' },
 ];
 
@@ -105,7 +111,7 @@ function ScoreCell({ value, highlight }: { value: number; highlight?: boolean })
 }
 
 export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
-  const award_probability_score =
+  const hit_rate_pct_score =
     gc.award_probability != null ? gc.award_probability * 5 : null;
 
   if (gcRatings.length === 0) {
@@ -113,7 +119,8 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
       id: gc.id,
       name: gc.name,
       award_probability: gc.award_probability,
-      award_probability_score,
+      hit_rate_pct_score,
+      hit_rate_dollar: gc.hit_rate_dollar ?? null,
       payment_timeline: 0,
       co_approval_timeline: 0,
       co_negotiations: 0,
@@ -123,6 +130,8 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
       schedule_accuracy: 0,
       site_control: 0,
       relationship: 0,
+      est_relationship: gc.est_relationship ?? null,
+      total_bids: gc.total_bids ?? null,
       overall_score: null,
       rating_count: 0,
     };
@@ -141,8 +150,8 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
   };
 
   const catValues = Object.values(categoryAvgs);
-  const scoreComponents = award_probability_score != null
-    ? [...catValues, award_probability_score]
+  const scoreComponents = hit_rate_pct_score != null
+    ? [...catValues, hit_rate_pct_score]
     : catValues;
   const overall_score = avg(scoreComponents);
 
@@ -150,8 +159,11 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[]): GCRow {
     id: gc.id,
     name: gc.name,
     award_probability: gc.award_probability,
-    award_probability_score,
+    hit_rate_pct_score,
+    hit_rate_dollar: gc.hit_rate_dollar ?? null,
     ...categoryAvgs,
+    est_relationship: gc.est_relationship ?? null,
+    total_bids: gc.total_bids ?? null,
     overall_score,
     rating_count: gcRatings.length,
   };
@@ -534,9 +546,28 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
                                 : <span className="text-white/20">—</span>}
                             </td>
                           ))}
+                          {/* Est Relation */}
                           <td className="px-4 py-3 text-center">
-                            {row.award_probability_score != null
-                              ? <ScoreCell value={row.award_probability_score} />
+                            {row.est_relationship != null
+                              ? <ScoreCell value={row.est_relationship} />
+                              : <span className="text-white/20">—</span>}
+                          </td>
+                          {/* Total Bids */}
+                          <td className="px-4 py-3 text-center">
+                            {row.total_bids != null
+                              ? <ScoreCell value={row.total_bids} />
+                              : <span className="text-white/20">—</span>}
+                          </td>
+                          {/* Hit Rate (%) */}
+                          <td className="px-4 py-3 text-center">
+                            {row.hit_rate_pct_score != null
+                              ? <ScoreCell value={row.hit_rate_pct_score} />
+                              : <span className="text-white/20">—</span>}
+                          </td>
+                          {/* Hit Rate ($) */}
+                          <td className="px-4 py-3 text-center">
+                            {row.hit_rate_dollar != null
+                              ? <span className="text-white/70 font-medium tabular-nums">${row.hit_rate_dollar.toLocaleString()}</span>
                               : <span className="text-white/20">—</span>}
                           </td>
                           <td className="px-4 py-3 text-center">

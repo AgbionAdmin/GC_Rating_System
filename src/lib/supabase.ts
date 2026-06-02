@@ -17,6 +17,9 @@ export type GeneralContractor = {
   aliases: string | null;
   project_award_probability: number | null;
   award_probability: number | null;
+  hit_rate_dollar: number | null;
+  est_relationship: number | null;
+  total_bids: number | null;
   created_at: string;
 };
 
