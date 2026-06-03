@@ -63,7 +63,7 @@ export function generatePeriodicReport(rows: GCRow[]): void {
     ['Score key:', [140, 165, 190]],
     ['4.0 – 5.0  Excellent', [74, 222, 128]],
     ['2.5 – 3.9  Satisfactory', [250, 204, 21]],
-    ['1.0 – 2.4  Needs Attention', [248, 113, 113]],
+    ['1.0 – 2.4  Poor', [248, 113, 113]],
     ['—  No data', [120, 140, 160]],
   ];
   let kx = margin;
@@ -131,17 +131,15 @@ export function generatePeriodicReport(rows: GCRow[]): void {
       0: { cellWidth: 28, halign: 'center' },
       1: { cellWidth: 130, halign: 'left', fontStyle: 'normal' },
     },
-    willDrawCell(data) {
+    didParseCell(data) {
       if (data.section === 'body') {
         const row = eligible[data.row.index];
         const isTop5 = top5Ids.has(row.id);
 
-        // Top-5 accent: slightly brighter row background
         if (isTop5) {
           data.cell.styles.fillColor = [28, 52, 76];
         }
 
-        // Color-code score cells (columns 2 onward, but not rank or name)
         if (data.column.index >= 2 && data.cell.text[0] !== '—') {
           const v = parseFloat(data.cell.text[0]);
           if (!isNaN(v)) {
@@ -151,7 +149,6 @@ export function generatePeriodicReport(rows: GCRow[]): void {
           }
         }
 
-        // Bold GC name for top 5
         if (data.column.index === 1 && isTop5) {
           data.cell.styles.fontStyle = 'bold';
           data.cell.styles.textColor = [255, 255, 255];
@@ -159,14 +156,17 @@ export function generatePeriodicReport(rows: GCRow[]): void {
       }
     },
     didDrawPage(hookData) {
-      // Footer on every page
       const pageNum = (hookData.pageNumber as number);
       const totalPages = (doc.internal as { getNumberOfPages(): number }).getNumberOfPages();
       doc.setFontSize(7.5);
       doc.setTextColor(100, 130, 160);
       doc.text(`Page ${pageNum} of ${totalPages}`, pageW / 2, pageH - 14, { align: 'center' });
       doc.text('Confidential — Internal Use Only', margin, pageH - 14);
-      doc.text(dateStr, pageW - margin, pageH - 14, { align: 'right' });
+      doc.setTextColor(80, 140, 200);
+      doc.textWithLink('gc-rating-project.vercel.app', pageW - margin, pageH - 14, {
+        align: 'right',
+        url: 'https://gc-rating-project.vercel.app/',
+      });
     },
   });
 
