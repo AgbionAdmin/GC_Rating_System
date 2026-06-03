@@ -162,13 +162,40 @@ export function generatePeriodicReport(rows: GCRow[]): void {
       doc.setTextColor(100, 130, 160);
       doc.text(`Page ${pageNum} of ${totalPages}`, pageW / 2, pageH - 14, { align: 'center' });
       doc.text('Confidential — Internal Use Only', margin, pageH - 14);
-      doc.setTextColor(80, 140, 200);
-      doc.textWithLink('gc-rating-project.vercel.app', pageW - margin, pageH - 14, {
-        align: 'right',
-        url: 'https://gc-rating-project.vercel.app/',
-      });
     },
   });
+
+  // ── "View online" block on last page ─────────────────────────────────────
+  const finalY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
+  const blockTop = finalY + 18;
+  const blockH = 32;
+  const blockX = pageW / 2 - 140;
+  const blockW = 280;
+
+  // Subtle background pill
+  doc.setFillColor(22, 38, 56);
+  doc.setDrawColor(50, 80, 115);
+  doc.setLineWidth(0.5);
+  doc.roundedRect(blockX, blockTop, blockW, blockH, 4, 4, 'FD');
+
+  // Label
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(120, 150, 180);
+  doc.text('View live data & full contractor profiles at', pageW / 2, blockTop + 12, { align: 'center' });
+
+  // Link — slightly larger, blue, underlined
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.setTextColor(80, 150, 220);
+  const linkText = 'gc-rating-project.vercel.app';
+  const linkX = pageW / 2 - doc.getTextWidth(linkText) / 2;
+  const linkY = blockTop + 24;
+  doc.textWithLink(linkText, pageW / 2, linkY, { align: 'center', url: 'https://gc-rating-project.vercel.app/' });
+  // Underline
+  doc.setDrawColor(80, 150, 220);
+  doc.setLineWidth(0.4);
+  doc.line(linkX, linkY + 1.5, linkX + doc.getTextWidth(linkText), linkY + 1.5);
 
   const fileName = `GC-Performance-Report-${now.toISOString().slice(0, 10)}.pdf`;
   doc.save(fileName);
