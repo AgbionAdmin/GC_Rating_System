@@ -17,8 +17,6 @@ type Props = {
 export type GCRow = {
   id: string;
   name: string;
-  award_probability: number | null;
-  hit_rate_pct_score: number | null;
   hit_rate_dollar_score: number | null;
   payment_timeline: number;
   co_approval_timeline: number;
@@ -58,7 +56,6 @@ const COLUMNS: { key: SortKey; label: string; short: string }[] = [
   { key: 'relationship', label: 'PM Relation', short: 'PM Relation' },
   { key: 'est_relationship', label: 'Est Relation', short: 'Est Relation' },
   { key: 'total_bids', label: 'Total Bids', short: 'Total Bids' },
-  { key: 'hit_rate_pct_score', label: 'Hit Rate (%)', short: 'Hit Rate (%)' },
   { key: 'hit_rate_dollar_score', label: 'Hit Rate ($)', short: 'Hit Rate ($)' },
   { key: 'rating_count', label: '# of Ratings', short: '# Ratings' },
 ];
@@ -120,8 +117,6 @@ function ScoreCell({ value, highlight }: { value: number; highlight?: boolean })
 }
 
 export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[], thresholds: BidThresholds = DEFAULT_THRESHOLDS): GCRow {
-  const hit_rate_pct_score =
-    gc.award_probability != null ? hitRateToScore(gc.award_probability) : null;
   const hit_rate_dollar_score =
     gc.hit_rate_dollar != null ? hitRateToScore(gc.hit_rate_dollar) : null;
   const total_bids =
@@ -131,8 +126,6 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[], threshold
     return {
       id: gc.id,
       name: gc.name,
-      award_probability: gc.award_probability,
-      hit_rate_pct_score,
       hit_rate_dollar_score,
       payment_timeline: 0,
       co_approval_timeline: 0,
@@ -163,14 +156,12 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[], threshold
   };
 
   const catValues = Object.values(categoryAvgs);
-  const extraScores = [hit_rate_pct_score, hit_rate_dollar_score, total_bids].filter((v): v is number => v != null);
+  const extraScores = [hit_rate_dollar_score, total_bids].filter((v): v is number => v != null);
   const overall_score = avg([...catValues, ...extraScores]);
 
   return {
     id: gc.id,
     name: gc.name,
-    award_probability: gc.award_probability,
-    hit_rate_pct_score,
     hit_rate_dollar_score,
     ...categoryAvgs,
     est_relationship: gc.est_relationship ?? null,
@@ -586,12 +577,6 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
                           <td className="px-4 py-3 text-center">
                             {row.total_bids != null
                               ? <ScoreCell value={row.total_bids} />
-                              : <span className="text-white/20">—</span>}
-                          </td>
-                          {/* Hit Rate (%) */}
-                          <td className="px-4 py-3 text-center">
-                            {row.hit_rate_pct_score != null
-                              ? <ScoreCell value={row.hit_rate_pct_score} />
                               : <span className="text-white/20">—</span>}
                           </td>
                           {/* Hit Rate ($) */}

@@ -335,7 +335,6 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
         const { error } = await supabase
           .from('general_contractors')
           .update({
-            award_probability: r.hitRatePct,
             hit_rate_dollar: r.hitRateDollar,
             total_bids_submitted_raw: r.totalBidsSubmitted,
           })
@@ -377,7 +376,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
 
   const doneLabel =
     uploadType === 'buildingconnected'
-      ? `Updated Hit Rate (%), Hit Rate ($), and Total Bids for ${uploadedCount} GC${uploadedCount !== 1 ? 's' : ''}.`
+      ? `Updated Hit Rate ($) and Total Bids for ${uploadedCount} GC${uploadedCount !== 1 ? 's' : ''}.`
       : `Updated Est Relation score for ${uploadedCount} GC${uploadedCount !== 1 ? 's' : ''}.`;
 
   return (
@@ -558,7 +557,6 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
                         <th className="px-4 py-3 text-left font-medium">CSV Client Name</th>
                         <th className="px-4 py-3 text-left font-medium">Matched GC</th>
                         <th className="px-4 py-3 text-center font-medium"># Bids</th>
-                        <th className="px-4 py-3 text-center font-medium">Hit Rate (%)</th>
                         <th className="px-4 py-3 text-center font-medium">Total Submitted</th>
                         <th className="px-4 py-3 text-center font-medium">Hit Rate ($)</th>
                         <th className="px-4 py-3 text-center font-medium">Bids Score</th>
@@ -581,9 +579,6 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center text-white/60 tabular-nums">{row.bids}</td>
-                            <td className="px-4 py-3 text-center tabular-nums">
-                              <span className={SCORE_COLOR(row.hitRatePct * 5)}>{fmtPct(row.hitRatePct)}</span>
-                            </td>
                             <td className="px-4 py-3 text-center text-white/60 tabular-nums">
                               {fmtDollar(row.totalBidsSubmitted)}
                             </td>

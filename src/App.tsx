@@ -96,7 +96,6 @@ export default function App() {
         <GCDetailPage
           gcId={selectedGCId}
           onBack={() => setScreen('gc-dashboard')}
-          onAwardProbabilityUpdated={() => {}}
         />
       )}
 

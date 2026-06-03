@@ -15,8 +15,6 @@ export type GeneralContractor = {
   id: string;
   name: string;
   aliases: string | null;
-  project_award_probability: number | null;
-  award_probability: number | null;
   hit_rate_dollar: number | null;
   est_relationship: number | null;
   total_bids: number | null;
@@ -60,7 +58,6 @@ export type RatingFormData = {
 export type GCDashboardRow = {
   id: string;
   name: string;
-  project_award_probability: number | null;
   payment_timeline: number;
   co_approval_timeline: number;
   co_negotiations: number;

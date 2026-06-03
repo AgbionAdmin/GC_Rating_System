@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Save, CreditCard as Edit2 } from 'lucide-react';
+import { ArrowLeft, CreditCard as Edit2 } from 'lucide-react';
 import { supabase, type GeneralContractor, type Rating, type ProjectManager } from '../lib/supabase';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
@@ -9,12 +9,10 @@ import { buildGCRow } from './GCDashboard';
 type Props = {
   gcId: string;
   onBack: () => void;
-  onAwardProbabilityUpdated: (gcId: string, value: number | null) => void;
   onGCUpdated?: (gc: GeneralContractor) => void;
 };
 
 type RatingWithPM = Rating & { pm_name: string };
-
 
 const SCORE_FIELDS: { key: keyof Rating; label: string }[] = [
   { key: 'payment_timeline', label: 'Payment Timeline' },
@@ -42,20 +40,12 @@ function avg(vals: number[]): number {
   return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
-export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, onGCUpdated }: Props) {
+export default function GCDetailPage({ gcId, onBack, onGCUpdated }: Props) {
   const [gc, setGc] = useState<GeneralContractor | null>(null);
   const [ratings, setRatings] = useState<RatingWithPM[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // GC name/alias editing
   const [showEditGCModal, setShowEditGCModal] = useState(false);
-
-  // Award probability editing
-  const [editing, setEditing] = useState(false);
-  const [apInput, setApInput] = useState('');
-  const [apError, setApError] = useState('');
-  const [saving, setSaving] = useState(false);
 
   useEffect(() => { fetchData(); }, [gcId]);
 
@@ -87,53 +77,12 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
     setGc(gcData);
     setRatings(enriched);
     setLoading(false);
-
-    if (gcData) {
-      setApInput(gcData.award_probability != null ? String(gcData.award_probability) : '');
-    }
-  }
-
-  async function handleSaveAwardProbability() {
-    const trimmed = apInput.trim();
-
-    if (trimmed === '') {
-      // Allow clearing
-      await persist(null);
-      return;
-    }
-
-    const num = parseFloat(trimmed);
-    if (isNaN(num) || num < 0 || num > 1) {
-      setApError('Enter a value between 0 and 1 (e.g. 0.75).');
-      return;
-    }
-
-    await persist(num);
   }
 
   function handleGCEdited(updated: GeneralContractor) {
     setGc((prev) => prev ? { ...prev, name: updated.name, aliases: updated.aliases } : prev);
     setShowEditGCModal(false);
     onGCUpdated?.(updated);
-  }
-
-  async function persist(value: number | null) {
-    setSaving(true);
-    setApError('');
-    const { error: updateError } = await supabase
-      .from('general_contractors')
-      .update({ award_probability: value })
-      .eq('id', gcId);
-    setSaving(false);
-
-    if (updateError) {
-      setApError('Failed to save. Please try again.');
-      return;
-    }
-
-    setGc((prev) => prev ? { ...prev, award_probability: value } : prev);
-    setEditing(false);
-    onAwardProbabilityUpdated(gcId, value);
   }
 
   if (loading) {
@@ -156,18 +105,12 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
   }
 
   const row = buildGCRow(gc, ratings);
-  const awardScore = gc.award_probability != null ? gc.award_probability * 5 : null;
-
   const catValues = SCORE_FIELDS.map((f) => row[f.key as keyof typeof row] as number);
-  const scoreComponents = awardScore != null ? [...catValues, awardScore] : catValues;
-  const overallScore = ratings.length > 0 || awardScore != null
-    ? avg(scoreComponents.filter((v) => v > 0))
-    : null;
+  const overallScore = ratings.length > 0 ? avg(catValues.filter((v) => v > 0)) : null;
 
   return (
     <div className="min-h-[calc(100vh-80px)] px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Back */}
         <button
           onClick={onBack}
           className="text-white/40 hover:text-white text-sm flex items-center gap-2 mb-6 transition-colors"
@@ -176,7 +119,6 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
           Back to Dashboard
         </button>
 
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
@@ -202,16 +144,11 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
           </p>
         </div>
 
-        {/* Score summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
           <ScoreCard
             label="Overall Score"
             value={overallScore != null ? overallScore.toFixed(2) : '—'}
             highlight
-          />
-          <ScoreCard
-            label="Hit Rate (%) Score"
-            value={awardScore != null ? awardScore.toFixed(1) + ' / 5' : '—'}
           />
           <ScoreCard
             label="Avg. Category Score"
@@ -224,76 +161,7 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left col: Hit Rate (%) + Category Averages */}
           <div className="lg:col-span-1 flex flex-col gap-6">
-            {/* Hit Rate (%) */}
-            <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-                <p className="text-white/60 text-xs uppercase tracking-wider font-medium">Hit Rate (%)</p>
-                {!editing && (
-                  <button
-                    onClick={() => { setEditing(true); setApError(''); }}
-                    className="text-white/30 hover:text-white transition-colors"
-                    aria-label="Edit"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-              <div className="px-5 py-4">
-                {editing ? (
-                  <div>
-                    <label className="block text-white/40 text-xs mb-2">
-                      Value between 0 and 1
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={apInput}
-                      onChange={(e) => { setApInput(e.target.value); setApError(''); }}
-                      placeholder="e.g. 0.75"
-                      className="w-full bg-white/5 border border-white/10 focus:border-brand-500/60 rounded-lg px-3 py-2.5 text-white placeholder-white/20 text-sm focus:outline-none transition-colors mb-3"
-                      autoFocus
-                    />
-                    {apError && <p className="text-red-400 text-xs mb-3">{apError}</p>}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSaveAwardProbability}
-                        disabled={saving}
-                        className="flex-1 flex items-center justify-center gap-1.5 bg-brand-500 hover:bg-brand-600 disabled:opacity-40 text-white text-sm font-semibold rounded-lg py-2 transition-colors"
-                      >
-                        <Save className="w-3.5 h-3.5" />
-                        {saving ? 'Saving…' : 'Save'}
-                      </button>
-                      <button
-                        onClick={() => { setEditing(false); setApInput(gc.award_probability != null ? String(gc.award_probability) : ''); setApError(''); }}
-                        className="px-4 py-2 border border-white/10 rounded-lg text-white/40 hover:text-white text-sm transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-2xl font-bold text-white tabular-nums">
-                      {gc.award_probability != null ? gc.award_probability.toFixed(2) : '—'}
-                    </p>
-                    {awardScore != null && (
-                      <p className="text-brand-400 text-sm mt-1 font-medium">
-                        Score: {awardScore.toFixed(1)} / 5
-                      </p>
-                    )}
-                    <p className="text-white/30 text-xs mt-2">
-                      Multiplied by 5 for scoring
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Category averages */}
             {ratings.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
                 <div className="px-5 py-4 border-b border-white/10">
@@ -320,7 +188,6 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
             )}
           </div>
 
-          {/* Right col: Reports list */}
           <div className="lg:col-span-2">
             <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-white/10">
@@ -370,6 +237,7 @@ export default function GCDetailPage({ gcId, onBack, onAwardProbabilityUpdated, 
           </div>
         </div>
       </div>
+
       {showEditGCModal && gc && (
         <AddGCModal
           editGC={gc}

@@ -15,8 +15,6 @@ export default function AddGCModal({ onClose, onSaved, initialName = '', editGC 
   const isEdit = !!editGC;
   const [name, setName] = useState(editGC ? editGC.name : initialName);
   const [aliases, setAliases] = useState(editGC ? (editGC.aliases ?? '') : '');
-  const [showAwardProb, setShowAwardProb] = useState(false);
-  const [awardProb, setAwardProb] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const firstInputRef = useRef<HTMLInputElement>(null);
@@ -37,16 +35,6 @@ export default function AddGCModal({ onClose, onSaved, initialName = '', editGC 
     const trimmedName = name.trim();
     if (!trimmedName) return;
 
-    let parsedProb: number | null = null;
-    if (showAwardProb && awardProb.trim()) {
-      const n = parseFloat(awardProb);
-      if (isNaN(n) || n < 0 || n > 1) {
-        setError('Award Probability must be a value between 0 and 1 (e.g. 0.75).');
-        return;
-      }
-      parsedProb = n;
-    }
-
     setSaving(true);
     setError('');
 
@@ -55,9 +43,6 @@ export default function AddGCModal({ onClose, onSaved, initialName = '', editGC 
         name: trimmedName,
         aliases: aliases.trim() || null,
       };
-      if (showAwardProb) {
-        (updatePayload as Record<string, unknown>).award_probability = parsedProb;
-      }
 
       const { data, error: updateError } = await supabase
         .from('general_contractors')
@@ -84,7 +69,6 @@ export default function AddGCModal({ onClose, onSaved, initialName = '', editGC 
         .insert({
           name: trimmedName,
           aliases: aliases.trim() || null,
-          award_probability: parsedProb,
         })
         .select()
         .maybeSingle();
@@ -150,40 +134,6 @@ export default function AddGCModal({ onClose, onSaved, initialName = '', editGC 
               className="w-full bg-white/5 border border-white/10 focus:border-brand-500/60 rounded-lg px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none transition-colors"
             />
           </div>
-
-          {/* Award Probability — opt-in, only show in add mode */}
-          {!isEdit && (
-            <div>
-              <button
-                type="button"
-                onClick={() => { setShowAwardProb((v) => !v); setAwardProb(''); }}
-                className="flex items-center gap-2 text-brand-500 hover:text-brand-400 text-sm font-medium transition-colors"
-              >
-                <span className="w-4 h-4 rounded border border-brand-500 flex items-center justify-center text-xs">
-                  {showAwardProb ? '✓' : ''}
-                </span>
-                Set Award Probability
-              </button>
-
-              {showAwardProb && (
-                <div className="mt-3">
-                  <label className="block text-white/60 text-xs uppercase tracking-wider font-medium mb-2">
-                    Award Probability <span className="text-white/30">(0–1)</span>
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={awardProb}
-                    onChange={(e) => setAwardProb(e.target.value)}
-                    placeholder="e.g. 0.75"
-                    className="w-full bg-white/5 border border-white/10 focus:border-brand-500/60 rounded-lg px-4 py-3 text-white placeholder-white/20 text-sm focus:outline-none transition-colors"
-                  />
-                </div>
-              )}
-            </div>
-          )}
         </div>
 
         {error && <div className="mt-4"><ErrorMessage message={error} /></div>}
