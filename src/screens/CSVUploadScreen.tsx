@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { ArrowLeft, Upload, FileText, CheckCircle, AlertTriangle, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { supabase, type GeneralContractor } from '../lib/supabase';
+import { type BidThresholds, DEFAULT_THRESHOLDS, totalBidsToScore, fetchThresholds } from '../lib/bidThresholds';
 
 type Props = {
   onBack: () => void;
@@ -101,14 +102,6 @@ function fmtPct(ratio: number): string {
   return `${(ratio * 100).toFixed(1)}%`;
 }
 
-function totalBidsToScore(dollars: number): number {
-  if (dollars <= 0) return 1;
-  if (dollars < 1_000_000) return 2;
-  if (dollars < 5_000_000) return 3;
-  if (dollars < 10_000_000) return 4;
-  return 5;
-}
-
 function hitRateToRatio(bids: number, won: number): number {
   return bids === 0 ? 0 : won / bids;
 }
@@ -137,7 +130,7 @@ type BCMatchedRow = BCParsedRow & {
   matchConfidence: 'exact' | 'fuzzy' | 'none';
 };
 
-function parseBCCSV(text: string, gcs: GeneralContractor[]): BCMatchedRow[] {
+function parseBCCSV(text: string, gcs: GeneralContractor[], thresholds: BidThresholds): BCMatchedRow[] {
   const rows = parseCSV(text);
   if (rows.length < 2) throw new Error('CSV appears to be empty or has no data rows.');
 
@@ -182,7 +175,7 @@ function parseBCCSV(text: string, gcs: GeneralContractor[]): BCMatchedRow[] {
     const totalWin = parseDollar(row[colTotalWin] ?? '0');
     const hitRatePct = hitRateToRatio(bids, bidsWon);
     const hitRateDollar = totalBidsSubmitted > 0 ? totalWin / totalBidsSubmitted : 0;
-    const totalBidsScore = totalBidsToScore(totalBidsSubmitted);
+    const totalBidsScore = totalBidsToScore(totalBidsSubmitted, thresholds);
 
     const { gc, confidence } = matchGC(client, gcs);
     result.push({
@@ -267,7 +260,12 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
   const [uploadError, setUploadError] = useState('');
   const [uploadedCount, setUploadedCount] = useState(0);
   const [showUnmatched, setShowUnmatched] = useState(false);
+  const [thresholds, setThresholds] = useState<BidThresholds>(DEFAULT_THRESHOLDS);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetchThresholds().then(setThresholds);
+  }, []);
 
   function resetFile() {
     setState('idle');
@@ -299,7 +297,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
         const gcs = (gcData ?? []) as GeneralContractor[];
 
         if (uploadType === 'buildingconnected') {
-          const rows = parseBCCSV(text, gcs);
+          const rows = parseBCCSV(text, gcs, thresholds);
           setBcMatched(rows);
         } else {
           const rows = parseERCSV(text, gcs);
@@ -311,7 +309,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
         setState('error');
       }
     },
-    [uploadType],
+    [uploadType, thresholds],
   );
 
   function handleFilePick(e: React.ChangeEvent<HTMLInputElement>) {
