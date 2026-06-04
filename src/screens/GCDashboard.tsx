@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown, Plus, Search, Upload, X, Settings, FileDown } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Plus, Search, Upload, X, Settings, Mail } from 'lucide-react';
 import { supabase, type GeneralContractor, type Rating } from '../lib/supabase';
 import { type BidThresholds, DEFAULT_THRESHOLDS, totalBidsToScore, fetchThresholds } from '../lib/bidThresholds';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import AddGCModal from '../components/AddGCModal';
 import ThresholdsModal from '../components/ThresholdsModal';
+import ReportsModal from '../components/ReportsModal';
 
 type Props = {
   onBack: () => void;
@@ -180,6 +181,7 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
   const [sortDir, setSortDir] = useState<SortDir>('desc');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showThresholdsModal, setShowThresholdsModal] = useState(false);
+  const [showReportsModal, setShowReportsModal] = useState(false);
   const [thresholds, setThresholds] = useState<BidThresholds>(DEFAULT_THRESHOLDS);
   const [pendingGCName, setPendingGCName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -380,17 +382,12 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
               Thresholds
             </button>
             <button
-              onClick={() => {
-                import('../lib/generatePeriodicReport').then(({ generatePeriodicReport }) => {
-                  generatePeriodicReport(rows);
-                });
-              }}
-              disabled={rows.filter((r) => r.rating_count > 0).length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed text-sm font-medium rounded-lg transition-colors"
-              title="Download Periodic Report PDF"
+              onClick={() => setShowReportsModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-sm font-medium rounded-lg transition-colors"
+              title="Manage report delivery and download PDF"
             >
-              <FileDown className="w-4 h-4" />
-              Periodic Report
+              <Mail className="w-4 h-4" />
+              Reports
             </button>
             <button
               onClick={onUploadCSV}
@@ -631,6 +628,13 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
             }));
             fetchData();
           }}
+        />
+      )}
+
+      {showReportsModal && (
+        <ReportsModal
+          onClose={() => setShowReportsModal(false)}
+          rows={rows}
         />
       )}
     </div>
