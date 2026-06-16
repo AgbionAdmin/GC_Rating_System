@@ -161,7 +161,7 @@ export function generatePeriodicReport(rows: GCRow[]): void {
       doc.setFontSize(7.5);
       doc.setTextColor(100, 130, 160);
       doc.text(`Page ${pageNum} of ${totalPages}`, pageW / 2, pageH - 14, { align: 'center' });
-      doc.text('Internal Use Only', margin, pageH - 14);
+      doc.text('Confidential — Internal Use Only', margin, pageH - 14);
     },
   });
 
