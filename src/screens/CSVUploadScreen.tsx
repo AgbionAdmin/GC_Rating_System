@@ -235,7 +235,7 @@ function parseERCSV(text: string, gcs: GeneralContractor[]): ERMatchedRow[] {
     if (!client) continue;
     const rawScore = parseFloat(row[scoreIdx]);
     if (isNaN(rawScore)) continue;
-    const score = Math.min(5, Math.max(1, Math.round(rawScore)));
+    const score = Math.min(5, Math.max(1, Math.round(rawScore * 10) / 10));
 
     const { gc, confidence } = matchGC(client, gcs);
     result.push({ client, score, gcId: gc?.id ?? null, gcName: gc?.name ?? null, matchConfidence: confidence });
@@ -578,7 +578,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center text-white/60 tabular-nums">{row.bids}</td>
+                            <td className="px-4 py-3 text-center text-white/60 tabular-nums">{row.bids.toFixed(1)}</td>
                             <td className="px-4 py-3 text-center text-white/60 tabular-nums">
                               {fmtDollar(row.totalBidsSubmitted)}
                             </td>
@@ -586,7 +586,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
                               <span className={SCORE_COLOR(row.hitRateDollar * 5)}>{fmtPct(row.hitRateDollar)}</span>
                             </td>
                             <td className="px-4 py-3 text-center tabular-nums">
-                              <span className={SCORE_COLOR(row.totalBidsScore)}>{row.totalBidsScore}.0</span>
+                              <span className={SCORE_COLOR(row.totalBidsScore)}>{row.totalBidsScore.toFixed(1)}</span>
                             </td>
                           </tr>
                         ))}
@@ -630,7 +630,7 @@ export default function CSVUploadScreen({ onBack, onComplete }: Props) {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-center tabular-nums">
-                              <span className={SCORE_COLOR(row.score)}>{row.score}.0</span>
+                              <span className={SCORE_COLOR(row.score)}>{row.score.toFixed(1)}</span>
                             </td>
                           </tr>
                         ))}
