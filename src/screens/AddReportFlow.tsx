@@ -25,6 +25,7 @@ type FormState = {
   schedule_accuracy: number;
   site_control: number;
   relationship: number;
+  safety: number;
 };
 
 const RATING_QUESTIONS: { key: keyof FormState; label: string; description: string }[] = [
@@ -73,6 +74,11 @@ const RATING_QUESTIONS: { key: keyof FormState; label: string; description: stri
     label: 'Relationship',
     description: "The general working relationship with the GC's project team.",
   },
+  {
+    key: 'safety',
+    label: 'Safety',
+    description: "The GC's commitment to jobsite safety practices, protocols, and incident prevention.",
+  },
 ];
 
 const RATING_LABELS: Record<number, string> = {
@@ -97,10 +103,11 @@ const INITIAL_FORM: FormState = {
   schedule_accuracy: 0,
   site_control: 0,
   relationship: 0,
+  safety: 0,
 };
 
-// Steps: 0=job info, 1=gc select, 2..10=questions (9 total), 11=review
-const TOTAL_STEPS = 12;
+// Steps: 0=job info, 1=gc select, 2..11=questions (10 total), 12=review
+const TOTAL_STEPS = 13;
 
 export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props) {
   const [step, setStep] = useState(0);
@@ -135,7 +142,7 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
       if (e.key !== 'Enter') return;
       // Don't intercept Enter inside the GC dropdown or modals
       if (showDropdown || showAddGCModal) return;
-      if (step === 11) return; // review step uses its own submit button
+      if (step === 12) return; // review step uses its own submit button
       if (canAdvanceStep()) {
         e.preventDefault();
         setError('');
@@ -215,6 +222,7 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
       schedule_accuracy: form.schedule_accuracy,
       site_control: form.site_control,
       relationship: form.relationship,
+      safety: form.safety,
     });
     setSubmitting(false);
     if (error) {
@@ -227,7 +235,7 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
   function canAdvanceStep(): boolean {
     if (step === 0) return form.job_number.trim().length > 0;
     if (step === 1) return form.gc_id.length > 0;
-    if (step >= 2 && step <= 10) {
+    if (step >= 2 && step <= 11) {
       const q = RATING_QUESTIONS[step - 2];
       return (form[q.key] as number) > 0;
     }
@@ -235,7 +243,7 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
   }
 
   const questionIndex = step - 2;
-  const currentQuestion = step >= 2 && step <= 10 ? RATING_QUESTIONS[questionIndex] : null;
+  const currentQuestion = step >= 2 && step <= 11 ? RATING_QUESTIONS[questionIndex] : null;
 
   return (
     <div className="min-h-[calc(100vh-80px)] px-6 py-10 flex flex-col">
@@ -244,8 +252,8 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
         <div className="mb-8">
           <div className="flex justify-between text-xs text-white/30 mb-2">
             <span>Step {step + 1} of {TOTAL_STEPS}</span>
-            {step >= 2 && step <= 10 && (
-              <span>Question {questionIndex + 1} of 9</span>
+            {step >= 2 && step <= 11 && (
+              <span>Question {questionIndex + 1} of 10</span>
             )}
           </div>
           <div className="h-1 bg-white/10 rounded-full overflow-hidden">
@@ -393,7 +401,7 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
         )}
 
         {/* Step 11: Review */}
-        {step === 11 && (
+        {step === 12 && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-2xl font-bold text-white mb-1">Review & Submit</h2>
             <p className="text-white/40 text-sm mb-6">Confirm your rating before submitting.</p>
@@ -449,7 +457,7 @@ export default function AddReportFlow({ pm, onComplete, onBack, onHome }: Props)
           >
             Back
           </button>
-          {step < 11 ? (
+          {step < 12 ? (
             <button
               onClick={() => { setError(''); setStep((s) => s + 1); }}
               disabled={!canAdvanceStep()}

@@ -37,6 +37,7 @@ export type Rating = {
   schedule_accuracy: number;
   site_control: number;
   relationship: number;
+  safety: number | null;
   created_at: string;
 };
 
@@ -53,6 +54,7 @@ export type RatingFormData = {
   schedule_accuracy: number;
   site_control: number;
   relationship: number;
+  safety: number;
 };
 
 export type GCDashboardRow = {
@@ -67,6 +69,7 @@ export type GCDashboardRow = {
   schedule_accuracy: number;
   site_control: number;
   relationship: number;
+  safety: number | null;
   overall_score: number;
   rating_count: number;
 };

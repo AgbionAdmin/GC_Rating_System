@@ -89,6 +89,7 @@ export function generatePeriodicReport(rows: GCRow[]): void {
     { header: 'Accuracy', key: 'schedule_accuracy' as keyof GCRow },
     { header: 'Site', key: 'site_control' as keyof GCRow },
     { header: 'PM Rel.', key: 'relationship' as keyof GCRow },
+    { header: 'Safety', key: 'safety' as keyof GCRow },
     { header: 'Est Rel.', key: 'est_relationship' as keyof GCRow },
     { header: 'Bids', key: 'total_bids' as keyof GCRow },
     { header: 'Hit Rate ($)', key: 'hit_rate_dollar_score' as keyof GCRow },

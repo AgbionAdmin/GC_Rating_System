@@ -24,9 +24,13 @@ const SCORE_FIELDS: { key: keyof Rating; label: string }[] = [
   { key: 'schedule_accuracy', label: 'Schedule (Accuracy)' },
   { key: 'site_control', label: 'Site Control' },
   { key: 'relationship', label: 'PM Relation' },
+  { key: 'safety', label: 'Safety' },
 ];
 
-function ScoreBadge({ value }: { value: number }) {
+function ScoreBadge({ value }: { value: number | null }) {
+  if (value == null) {
+    return <span className="text-white/20 text-sm">—</span>;
+  }
   const color =
     value >= 3.5 ? 'text-green-400' :
     value >= 2 ? 'text-yellow-400' : 'text-red-400';
@@ -105,8 +109,12 @@ export default function GCDetailPage({ gcId, onBack, onGCUpdated }: Props) {
   }
 
   const row = buildGCRow(gc, ratings);
-  const catValues = SCORE_FIELDS.map((f) => row[f.key as keyof typeof row] as number);
-  const overallScore = ratings.length > 0 ? avg(catValues.filter((v) => v > 0)) : null;
+  const catValues = SCORE_FIELDS.map((f) => {
+    const v = row[f.key as keyof typeof row] as number | null;
+    return v != null ? v : 0;
+  });
+  const nonZeroCatVals = catValues.filter((v) => v > 0);
+  const overallScore = row.overall_score;
 
   return (
     <div className="min-h-[calc(100vh-80px)] px-4 py-8">
@@ -152,7 +160,7 @@ export default function GCDetailPage({ gcId, onBack, onGCUpdated }: Props) {
           />
           <ScoreCard
             label="Avg. Category Score"
-            value={ratings.length > 0 ? avg(catValues).toFixed(2) : '—'}
+            value={nonZeroCatVals.length > 0 ? avg(nonZeroCatVals).toFixed(2) : '—'}
           />
           <ScoreCard
             label="Reports"
@@ -169,17 +177,21 @@ export default function GCDetailPage({ gcId, onBack, onGCUpdated }: Props) {
                 </div>
                 <div className="divide-y divide-white/5">
                   {SCORE_FIELDS.map((f) => {
-                    const val = row[f.key as keyof typeof row] as number;
+                    const val = row[f.key as keyof typeof row] as number | null;
                     return (
                       <div key={f.key} className="px-5 py-2.5 flex items-center justify-between">
                         <p className="text-white/60 text-xs">{f.label}</p>
-                        <span className={`text-sm font-semibold tabular-nums ${
-                          val >= 4.5 ? 'text-green-400' :
-                          val >= 3.5 ? 'text-white' :
-                          val >= 2.5 ? 'text-yellow-400' : 'text-red-400'
-                        }`}>
-                          {val.toFixed(1)}
-                        </span>
+                        {val != null ? (
+                          <span className={`text-sm font-semibold tabular-nums ${
+                            val >= 4.5 ? 'text-green-400' :
+                            val >= 3.5 ? 'text-white' :
+                            val >= 2.5 ? 'text-yellow-400' : 'text-red-400'
+                          }`}>
+                            {val.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="text-white/20 text-sm">—</span>
+                        )}
                       </div>
                     );
                   })}
@@ -220,7 +232,7 @@ export default function GCDetailPage({ gcId, onBack, onGCUpdated }: Props) {
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {SCORE_FIELDS.map((f) => {
-                          const val = r[f.key as keyof Rating] as number;
+                          const val = r[f.key as keyof Rating] as number | null;
                           return (
                             <div key={f.key} className="flex items-center justify-between bg-white/3 rounded px-2.5 py-1.5">
                               <p className="text-white/40 text-[11px]">{f.label}</p>

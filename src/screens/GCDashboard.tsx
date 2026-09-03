@@ -27,6 +27,7 @@ export type GCRow = {
   schedule_accuracy: number;
   site_control: number;
   relationship: number;
+  safety: number | null;
   est_relationship: number | null;
   total_bids: number | null;
   overall_score: number | null;
@@ -39,7 +40,7 @@ type SortDir = 'asc' | 'desc';
 const SCORE_COLUMNS: SortKey[] = [
   'payment_timeline', 'co_approval_timeline', 'co_negotiations',
   'contract_terms', 'conflict_mitigation', 'schedule_trade_stacking',
-  'schedule_accuracy', 'site_control', 'relationship',
+  'schedule_accuracy', 'site_control', 'relationship', 'safety',
 ];
 
 const COLUMNS: { key: SortKey; label: string; short: string }[] = [
@@ -54,6 +55,7 @@ const COLUMNS: { key: SortKey; label: string; short: string }[] = [
   { key: 'schedule_accuracy', label: 'Schedule (Accuracy)', short: 'Accuracy' },
   { key: 'site_control', label: 'Site Control', short: 'Site' },
   { key: 'relationship', label: 'PM Relation', short: 'PM Relation' },
+  { key: 'safety', label: 'Safety', short: 'Safety' },
   { key: 'est_relationship', label: 'Est Relation', short: 'Est Relation' },
   { key: 'total_bids', label: 'Total Bids', short: 'Total Bids' },
   { key: 'hit_rate_dollar_score', label: 'Hit Rate ($)', short: 'Hit Rate ($)' },
@@ -63,6 +65,12 @@ const COLUMNS: { key: SortKey; label: string; short: string }[] = [
 function avg(vals: number[]): number {
   if (!vals.length) return 0;
   return vals.reduce((a, b) => a + b, 0) / vals.length;
+}
+
+function avgNotNull(vals: (number | null)[]): number | null {
+  const nonNull = vals.filter((v): v is number => v != null);
+  if (!nonNull.length) return null;
+  return nonNull.reduce((a, b) => a + b, 0) / nonNull.length;
 }
 
 function fmt(n: number): string {
@@ -136,6 +144,7 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[], threshold
       schedule_accuracy: 0,
       site_control: 0,
       relationship: 0,
+      safety: 0,
       est_relationship: gc.est_relationship ?? null,
       total_bids,
       overall_score: null,
@@ -153,9 +162,21 @@ export function buildGCRow(gc: GeneralContractor, gcRatings: Rating[], threshold
     schedule_accuracy: avg(gcRatings.map((r) => r.schedule_accuracy)),
     site_control: avg(gcRatings.map((r) => r.site_control)),
     relationship: avg(gcRatings.map((r) => r.relationship)),
+    safety: avgNotNull(gcRatings.map((r) => r.safety)),
   };
 
-  const catValues = Object.values(categoryAvgs);
+  const catValues = [
+    categoryAvgs.payment_timeline,
+    categoryAvgs.co_approval_timeline,
+    categoryAvgs.co_negotiations,
+    categoryAvgs.contract_terms,
+    categoryAvgs.conflict_mitigation,
+    categoryAvgs.schedule_trade_stacking,
+    categoryAvgs.schedule_accuracy,
+    categoryAvgs.site_control,
+    categoryAvgs.relationship,
+    ...(categoryAvgs.safety != null ? [categoryAvgs.safety] : []),
+  ];
   const extraScores = [hit_rate_dollar_score, total_bids].filter((v): v is number => v != null);
   const overall_score = avg([...catValues, ...extraScores]);
 
@@ -573,13 +594,16 @@ export default function GCDashboard({ onBack, backLabel = '← Back', onSelectGC
                               ? <ScoreCell value={row.overall_score!} highlight={isTop5} />
                               : <span className="text-white/20">—</span>}
                           </td>
-                          {SCORE_COLUMNS.map((col) => (
-                            <td key={col} className="px-4 py-3 text-center">
-                              {row.rating_count > 0
-                                ? <ScoreCell value={row[col] as number} />
-                                : <span className="text-white/20">—</span>}
-                            </td>
-                          ))}
+                          {SCORE_COLUMNS.map((col) => {
+                            const val = row[col] as number | null;
+                            return (
+                              <td key={col} className="px-4 py-3 text-center">
+                                {val != null
+                                  ? <ScoreCell value={val} />
+                                  : <span className="text-white/20">—</span>}
+                              </td>
+                            );
+                          })}
                           {/* Est Relation */}
                           <td className="px-4 py-3 text-center">
                             {row.est_relationship != null
